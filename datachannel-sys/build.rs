@@ -28,19 +28,25 @@ fn link_static_libdatachannel(out_dir: &str, profile: &str) {
         .include(format!("{}/lib", out_dir))
         .build("src/lib.rs");
 
-    // Link static libjuice
-    if cfg!(target_env = "msvc") {
-        println!(
-            "cargo:rustc-link-search=native={}/build/deps/libjuice/{}",
-            out_dir, profile
-        );
-    } else {
-        println!(
-            "cargo:rustc-link-search=native={}/build/deps/libjuice",
-            out_dir
-        );
+    // Link ICE library: libnice (system, via pkg-config) or libjuice (static)
+    #[cfg(feature = "libnice")]
+    pkg_config::probe_library("nice")
+        .expect("libnice not found; install libnice-dev or libnice via your package manager");
+    #[cfg(not(feature = "libnice"))]
+    {
+        if cfg!(target_env = "msvc") {
+            println!(
+                "cargo:rustc-link-search=native={}/build/deps/libjuice/{}",
+                out_dir, profile
+            );
+        } else {
+            println!(
+                "cargo:rustc-link-search=native={}/build/deps/libjuice",
+                out_dir
+            );
+        }
+        println!("cargo:rustc-link-lib=static=juice-static");
     }
-    println!("cargo:rustc-link-lib=static=juice-static");
 
     // Link static usrsctplib
     if cfg!(target_env = "msvc") {
@@ -99,6 +105,9 @@ fn main() {
         if !cfg!(feature = "media") {
             cmake_conf.define("NO_MEDIA", "ON");
         }
+        if cfg!(feature = "libnice") {
+            cmake_conf.define("USE_NICE", "ON");
+        }
 
         if let Ok(openssl_root_dir) = env_var_rerun("OPENSSL_ROOT_DIR") {
             cmake_conf.define("OPENSSL_ROOT_DIR", openssl_root_dir);
@@ -135,6 +144,9 @@ fn main() {
         cmake_conf.define("NO_EXAMPLES", "ON");
         if !cfg!(feature = "media") {
             cmake_conf.define("NO_MEDIA", "ON");
+        }
+        if cfg!(feature = "libnice") {
+            cmake_conf.define("USE_NICE", "ON");
         }
 
         let openssl_root_dir = openssl_artifacts().lib_dir().parent().unwrap();
@@ -183,6 +195,9 @@ fn main() {
         cmake_conf.define("NO_EXAMPLES", "ON");
         if !cfg!(feature = "media") {
             cmake_conf.define("NO_MEDIA", "ON");
+        }
+        if cfg!(feature = "libnice") {
+            cmake_conf.define("USE_NICE", "ON");
         }
 
         if let Ok(openssl_root_dir) = env_var_rerun("OPENSSL_ROOT_DIR") {

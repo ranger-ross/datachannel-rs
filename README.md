@@ -102,6 +102,7 @@ See also [async-datachannel][] for an async-based implementation.
   the build (including `OpenSSL`).
 - **vendored-libdatachannel** Builds libdatachannel statically but keeps `OpenSSL` dynamically linked.
 - **media** Enables media support through `libdatachannel`.
+- **libnice** Builds libdatachannel with libnice instead of libjuice.
 
 ## Building
 
